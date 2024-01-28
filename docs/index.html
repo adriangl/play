@@ -5,9 +5,9 @@
     <title>shields json for google play store app badge</title>
     <meta name="description" content="shields.io badges for Android apps on Google Play Store using the endpoint badge" />
     <meta name="keywords" content="shields,badge,android,google,play,store">
-    <link rel="stylesheet" type="text/css" href="https://cvzi.github.io/play/main.css" />
-    <link rel="icon" type="image/x-icon" href="https://cvzi.github.io/play/favicon.ico">
-    <script src="https://cvzi.github.io/play/main.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://adriangl.github.io/play/main.css" />
+    <link rel="icon" type="image/x-icon" href="https://adriangl.github.io/play/favicon.ico">
+    <script src="https://adriangl.github.io/play/main.js"></script>
     <meta name="google-site-verification" content="tnVo2nRPkj_OdF4iovioWfXkqYcRsXUcIvOtdO37eLw" />
     <meta name="msvalidate.01" content="6E31434439F9C46EF683442C564E819F" />
     <meta name="yandex-verification" content="fcbb4b085cc70ff8" />
@@ -46,6 +46,26 @@
     </td>
     <td>
       <input type="text" size="60" name="appid" id="appid" value="{{appid}}" placeholder="org.mozilla.firefox or https://play.google.com/store/apps/details?id=...">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <label for="label">Play Store country:</label>
+    </td>
+    <td>
+      <input type="text" size="60" name="gl" id="gl" value="{{playStoreCountry}}" placeholder="US, ES...">
+      <br class="mobile" />
+      Use any country code available at <br class="mobile" /><a href="https://developers.google.com/custom-search/docs/xml_results_appendices#countryCodes" target="_blank">https://developers.google.com/custom-search/docs/xml_results_appendices#countryCodes</a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <label for="label">Display language:</label>
+    </td>
+    <td>
+      <input type="text" size="60" name="hl" id="hl" value="{{displayLanguage}}" placeholder="en, es...">
+      <br class="mobile" />
+      Use any language code available at <br class="mobile" /><a href="https://developers.google.com/custom-search/docs/xml_results_appendices#interfaceLanguages" target="_blank">https://developers.google.com/custom-search/docs/xml_results_appendices#interfaceLanguages</a>
     </td>
   </tr>
   <tr>
@@ -117,14 +137,14 @@
 <br>
 <br>
 <hr>
-Source code at <a href="https://github.com/cvzi/play">github</a>
+Source code at <a href="https://github.com/adriangl/play">github</a>
 <br>
 <br>
-<a href="https://cvzi.github.io/play/privacy.html">Privacy policy</a>
+<a href="https://adriangl.github.io/play/privacy.html">Privacy policy</a>
 
 <div>
   <!-- https://github.com/tholman/github-corners -->
-  <a href="https://github.com/cvzi/play" class="github-corner" aria-label="View source on GitHub" title="View source on GitHub">
+  <a href="https://github.com/adriangl/play" class="github-corner" aria-label="View source on GitHub" title="View source on GitHub">
     <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#97ca00; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
       <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
       <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>

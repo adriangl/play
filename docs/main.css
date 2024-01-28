@@ -3,7 +3,7 @@
   font-family: 'Lekton';
   font-style: normal;
   font-weight: 400;
-  src: local('Lekton'), local('Lekton-Regular'), url(https://cvzi.github.io/play/Lekton/Lekton.woff2) format('woff2'), url(https://cvzi.github.io/play/Lekton/Lekton.ttf) format('truetype');
+  src: local('Lekton'), local('Lekton-Regular'), url(https://adriangl.github.io/play/Lekton/Lekton.woff2) format('woff2'), url(https://adriangl.github.io/play/Lekton/Lekton.ttf) format('truetype');
 }
 
 body {
