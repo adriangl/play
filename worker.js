@@ -29,8 +29,6 @@ Badge: https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.cuzi.workers.dev%2
 
 */
 
-/* global addEventListener, Event, Response, fetch, PLAY_CACHE */
-
 const appIDPattern = /[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*/
 
 const playStorePlaceHolders = {
@@ -50,11 +48,13 @@ const playStorePlaceHolders = {
   $published: 'First published'
 }
 
+const cacheSeconds = 60 * 60 * 5 // 5 hours
+
 const fetchConfig = {
   cf: {
     // Always cache this fetch regardless of content type
     // for a max of 5 hours before revalidating the resource
-    cacheTtl: 60 * 60 * 5,
+    cacheTtl: cacheSeconds,
     cacheEverything: true
   }
 }
@@ -71,33 +71,36 @@ const responseConfigHTML = {
   }
 }
 
-async function cachedFetchText (url, fetchConfig, event) {
-  if (PLAY_CACHE) {
-    let data = null
-    try {
-      data = await PLAY_CACHE.get(url, { type: 'text' })
-    } catch (e) {
-      // Catch error 426 'Too many requests' on free plan
-      console.warn(e)
-    }
-    if (!data) {
-      data = await (await fetch(url, fetchConfig)).text()
-      try {
-        if (event instanceof Event) {
-          event.waitUntil(PLAY_CACHE.put(url, data, { expirationTtl: 6 * 60 * 60 }))
-        } else {
-          await PLAY_CACHE.put(url, data, { expirationTtl: 6 * 60 * 60 })
-        }
-      } catch (e) {
-        // Catch error 426 'Too many requests' on free plan
+async function cachedFetchText (url, fetchConfig, ctx) {
+  if (typeof PLAY_CACHE !== 'undefined') {
+	let data = null
+
+	try {
+	  console.log(`Trying to find cache for ${url}`)
+	  data = PLAY_CACHE.get(url, { type: 'text' })
+	} catch (e) {
+		// Catch error 426 'Too many requests' on free plan
         console.warn(e)
-      }
-    } else {
-      console.log('Cache hit: ' + url)
-    }
-    return data
+	}
+
+	if (!data) {
+		console.log(`Cache for ${url} not found. Requesting data`)
+		data = await (await fetch(url, fetchConfig)).text()
+		try {
+		console.log(`Saving data for url ${url} to cache`)
+		ctx.waitUntil(PLAY_CACHE.put(url, data, { expirationTtl: cacheSeconds }))
+		} catch(e) {
+		  // Catch error 426 'Too many requests' on free plan
+		  console.warn(e)
+		}
+	} else {
+		console.log(`Cache hit for url ${url}`)
+	}
+
+	return data
   } else {
-    return (await fetch(url, fetchConfig)).text()
+	console.log(`No cache, fetch ${url} directly`)
+	return await (await fetch(url, fetchConfig)).text()
   }
 }
 
@@ -151,23 +154,24 @@ function getOrDefault (obj, indices, fallback = '', post = (x) => x) {
   return fallback
 }
 
-function language (event) {
-  if (event && event.request) {
-    const accept = event.request.headers.get('accept-language')
-    if (accept) {
-      const m = accept.match(/[a-z]{2}-([a-z]{2})/i)
-      if (m) {
-        return `&gl=${encodeURIComponent(m[1])}&hl=${encodeURIComponent(m[0])}`
-      }
-    }
+function language (hl, gl) {
+  let languageQuery = []
+  if (hl) {
+	languageQuery.push(`hl=${hl}`)
   }
-  return ''
+  if (gl) {
+	languageQuery.push(`gl=${gl}`)
+  }
+
+  if (languageQuery.length == 0) return ''
+
+  return `&${languageQuery.join("&")}`
 }
 
-async function getPlayStore (packageName, event) {
-  const lang = language(event)
+async function getPlayStore (packageName, env, ctx, hl, gl) {
+  const lang = language(hl, gl)
   const url = `https://play.google.com/store/apps/details?id=${encodeURIComponent(packageName)}${lang}`
-  const content = await cachedFetchText(url, fetchConfig, event)
+  const content = await cachedFetchText(url, fetchConfig, ctx)
 
   const parts = content.split('AF_initDataCallback({').slice(1).map(v => v.split('</script>')[0])
   if (parts.length === 0) {
@@ -209,7 +213,7 @@ function errorJSON (message) {
   }), responseConfigJSON)
 }
 
-async function handleBadge (event, url) {
+async function handleBadge (env, ctx, url) {
   const appId = url.searchParams.get('i') || url.searchParams.get('id') || ''
 
   if (!appId) {
@@ -220,9 +224,13 @@ async function handleBadge (event, url) {
   if (!m || !m[0]) {
     return errorJSON('invalid app id format')
   }
+
+  const hl = url.searchParams.get('hl')
+  const gl = url.searchParams.get('gl')
+
   let playData
   try {
-    playData = await getPlayStore(m[0], event)
+    playData = await getPlayStore(m[0], env, ctx, hl, gl)
   } catch (e) {
     console.error(e)
     return errorJSON(e)
@@ -247,23 +255,27 @@ function handleIndex (url) {
     appid: url.searchParams.get('i') || url.searchParams.get('id') || 'org.mozilla.firefox',
     label: url.searchParams.get('l') || url.searchParams.get('label') || 'Android',
     message: url.searchParams.get('m') || url.searchParams.get('message') || '$version',
+	displayLanguage: url.searchParams.get('hl') || 'en',
+    playStoreCountry: url.searchParams.get('gl') || 'US',
     placeHolders: playStorePlaceHolders
   }
 
-  return template('https://cvzi.github.io/play/index.html', templateVars)
+  return template('https://adriangl.github.io/play/index.html', templateVars)
 }
 
-async function handleRequest (request, event) {
+async function handleRequest (request, env, ctx) {
   const url = new URL(request.url)
   if (url.pathname.startsWith('/play')) {
-    return handleBadge(event, url)
+    return handleBadge(env, ctx, url)
   } else if (url.pathname.startsWith('/favicon')) {
-    return Response.redirect('https://cvzi.github.io/play/favicon.ico', 301)
+    return Response.redirect('https://adriangl.github.io/play/favicon.ico', 301)
   } else {
     return handleIndex(url)
   }
 }
 
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request, event))
-})
+export default {
+  async fetch(request, env, ctx) {
+	return handleRequest(request, env, ctx)
+  },
+};
